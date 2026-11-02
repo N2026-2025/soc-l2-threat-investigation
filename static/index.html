@@ -1,0 +1,51 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SOC L2 · Threat Investigation Platform</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<style>
+:root{--bg:#0e1621;--panel:#16212f;--line:#263548;--tx:#e6edf5;--mut:#8fa1b6;--acc:#4cc9b0;--c:#ef4444;--a:#f97316;--m:#eab308;--b:#22c55e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 "IBM Plex Sans","Segoe UI",system-ui,sans-serif}
+header{display:flex;gap:16px;align-items:center;justify-content:space-between;padding:16px 28px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+h1{font-size:18px;margin:0}h2{font-size:15px;margin:0 0 10px;color:var(--acc)}main{padding:24px 28px;max-width:1280px;margin:auto;display:grid;gap:18px}
+.row{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px}
+.kpi b{display:block;font-size:28px}.kpi span{color:var(--mut)}button,label.btn{background:var(--acc);color:#05231d;border:0;border-radius:6px;padding:9px 14px;font:600 14px inherit;cursor:pointer}
+button.sec{background:transparent;color:var(--tx);border:1px solid var(--line)}button:disabled{opacity:.4;cursor:not-allowed}button:focus-visible,label.btn:focus-within{outline:2px solid #fff;outline-offset:2px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--mut);font-weight:600}
+.tag{padding:2px 8px;border-radius:99px;font-size:12px;font-weight:600;color:#111}.Crítico{background:var(--c)}.Alto{background:var(--a)}.Medio{background:var(--m)}.Bajo{background:var(--b)}
+details{margin:4px 0}summary{cursor:pointer}pre{white-space:pre-wrap;color:var(--mut);margin:6px 0}.empty{color:var(--mut);padding:20px;text-align:center}#msg{color:var(--mut)}
+.scroll{overflow-x:auto;max-height:340px}
+</style></head><body>
+<header><h1>SOC L2 · Threat Investigation Platform</h1>
+<div><label class="btn">Importar CSV / XLSX<input id="f" type="file" accept=".csv,.xlsx" hidden></label>
+<button class="sec" id="demo">Usar datos de ejemplo</button></div></header>
+<main>
+<div id="msg">Importa el archivo exportado del SIEM para iniciar la investigación.</div>
+<section class="row" id="kpis"></section>
+<section class="row"><div class="card"><h2>Riesgo por hallazgo</h2><canvas id="c1"></canvas></div><div class="card"><h2>Eventos por hora</h2><canvas id="c2"></canvas></div>
+<div class="card"><h2>Intentos fallidos por IP origen</h2><canvas id="c3"></canvas></div><div class="card"><h2>Severidad original del log</h2><canvas id="c4"></canvas></div></section>
+<section class="card"><h2>Incidentes correlacionados</h2><div id="inc" class="empty">Sin datos</div></section>
+<section class="card"><h2>Hallazgos, razonamiento y evidencia</h2><div id="fnd" class="empty">Sin datos</div></section>
+<section class="card"><h2>Informes en español</h2><button id="gen" disabled>Generar informes con IA</button>
+<button class="sec" id="pe" disabled>PDF ejecutivo</button><button class="sec" id="pt" disabled>PDF técnico</button><div id="rep"></div></section>
+<section class="card"><h2>Eventos importados (primeros 200)</h2><div class="scroll" id="ev"></div></section>
+</main>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const col={Crítico:'#ef4444',Alto:'#f97316',Medio:'#eab308',Bajo:'#22c55e'};let charts=[];
+function chart(id,type,labels,data,colors){const c=new Chart($(id),{type,data:{labels,datasets:[{data,backgroundColor:colors||'#4cc9b0',borderColor:'#4cc9b0'}]},options:{plugins:{legend:{display:type==='doughnut',labels:{color:'#e6edf5'}}},scales:type==='doughnut'?{}:{x:{ticks:{color:'#8fa1b6'}},y:{ticks:{color:'#8fa1b6'},beginAtZero:true}}}});charts.push(c)}
+async function send(file){$('#msg').textContent='Analizando…';const fd=new FormData();fd.append('file',file);
+ const r=await fetch('/api/upload',{method:'POST',body:fd}),j=await r.json();if(!r.ok){$('#msg').textContent=j.error;return}
+ const R=j.result,m=R.metrics;$('#msg').textContent=`${file.name} · ${m.timezone} · rango ${m.range[0]} → ${m.range[1]}`;
+ $('#kpis').innerHTML=[['Eventos',m.total],['Hosts',m.hosts],['Usuarios',m.users],['Hallazgos',R.findings.length],['Incidentes',R.incidents.length]].map(k=>`<div class="card kpi"><b>${k[1]}</b><span>${k[0]}</span></div>`).join('');
+ charts.forEach(c=>c.destroy());charts=[];const cnt={};R.findings.forEach(f=>cnt[f.risk]=(cnt[f.risk]||0)+1);const ks=Object.keys(col).filter(k=>cnt[k]);
+ chart('#c1','bar',ks,ks.map(k=>cnt[k]),ks.map(k=>col[k]));chart('#c2','line',Object.keys(m.by_hour),Object.values(m.by_hour));
+ chart('#c3','bar',Object.keys(m.failed_by_ip),Object.values(m.failed_by_ip));chart('#c4','doughnut',Object.keys(m.by_severity),Object.values(m.by_severity),['#4cc9b0','#eab308','#f97316','#ef4444','#8fa1b6']);
+ $('#inc').className='';$('#inc').innerHTML=R.incidents.length?`<table><tr><th>ID</th><th>Riesgo</th><th>Tácticas</th><th>IPs</th><th>Usuarios</th><th>Hosts</th></tr>${R.incidents.map(i=>`<tr><td>${i.id}</td><td><span class="tag ${i.risk}">${i.risk} ${i.score}</span></td><td>${esc(i.tactics.join(', '))}</td><td>${esc(i.ips.join(', '))}</td><td>${esc(i.users.join(', '))}</td><td>${esc(i.hosts.join(', '))}</td></tr>`).join('')}</table>`:'<div class="empty">Sin incidentes con las reglas actuales. Esto no prueba ausencia de amenazas.</div>';
+ $('#fnd').className='';$('#fnd').innerHTML=R.findings.map(f=>`<details><summary><span class="tag ${f.risk}">${f.risk} ${f.score}</span> ${esc(f.title)} · ${f.mitre}</summary><pre>${esc(f.reasoning.join('\n'))}\nEvidencia: ${esc(f.evidence.join(', '))}</pre></details>`).join('');
+ const k=Object.keys(j.preview[0]||{});$('#ev').innerHTML=`<table><tr>${k.map(c=>`<th>${c}</th>`).join('')}</tr>${j.preview.map(r=>`<tr>${k.map(c=>`<td>${esc(r[c])}</td>`).join('')}</tr>`).join('')}</table>`;
+ $('#gen').disabled=false;$('#pe').disabled=$('#pt').disabled=true;$('#rep').innerHTML=''}
+$('#f').onchange=e=>e.target.files[0]&&send(e.target.files[0]);
+$('#demo').onclick=async()=>send(new File([await (await fetch('/sample')).blob()],'sample_logs.csv'));
+$('#gen').onclick=async()=>{$('#gen').textContent='Generando…';const r=await fetch('/api/report',{method:'POST'}),j=await r.json();$('#gen').textContent='Regenerar informes';
+ $('#rep').innerHTML=`<h2>Resumen ejecutivo</h2><p>${esc(j.resumen_ejecutivo)}</p><h2>Resumen técnico</h2><pre>${esc(j.resumen_tecnico)}</pre><h2>Recomendaciones</h2><ul>${j.recomendaciones.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><p style="color:var(--mut)">Motor: ${esc(j.motor)} · ${esc(j.limitaciones.join(' | '))}</p>`;$('#pe').disabled=$('#pt').disabled=false};
+$('#pe').onclick=()=>location='/api/report/ejecutivo.pdf';$('#pt').onclick=()=>location='/api/report/tecnico.pdf';
+</script></body></html>

