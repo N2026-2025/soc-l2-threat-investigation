@@ -7,20 +7,17 @@ from xml.sax.saxutils import escape as esc
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import (SimpleDocTemplate, Paragraph, Spacer, Table,
-                                TableStyle, Image, PageBreak, KeepTogether)
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, Image, PageBreak, KeepTogether
 
 
 # ---------------------------------------------------------------- helpers
 
 def _styles():
     ss = getSampleStyleSheet()
-    h1 = ParagraphStyle("h1", parent=ss["Title"], textColor=colors.HexColor("#14213d"),
-                        fontSize=16, spaceAfter=6)
-    h = ParagraphStyle("h", parent=ss["Heading2"], textColor=colors.HexColor("#14213d"),
-                       fontSize=12, spaceBefore=10, spaceAfter=4)
+    h1 = ParagraphStyle("h1", parent=ss["Title"], textColor=colors.HexColor("#14213d"), fontSize=16, spaceAfter=6)
+    h = ParagraphStyle("h", parent=ss["Heading2"], textColor=colors.HexColor("#14213d"), fontSize=12, spaceBefore=10, spaceAfter=4)
     b = ParagraphStyle("b", parent=ss["BodyText"], leading=14, fontSize=9.5)
-    cell = ParagraphStyle("cell", parent=ss["BodyText"], leading=11, fontSize=8)
+    cell = ParagraphStyle("cell", parent=ss["BodyText"], leading=11, fontSize=8, textColor=colors.HexColor("#212121"))
     return ss, h1, h, b, cell
 
 
@@ -38,6 +35,19 @@ def _wrap_list(items, sep=" · "):
     if not items:
         return "n/d"
     return "<br/>".join(esc(x) for x in items)
+
+
+def _safe_p():
+    """Create P lambda that handles <br/> tags correctly."""
+    def P(t, s=None):
+        if s is None:
+            s = b
+        # Escape HTML, then restore any <br/> tags, then convert \n to <br/>
+        t = esc(t)
+        t = t.replace("&lt;br/&gt;", "<br/>")
+        t = t.replace("\n", "<br/>")
+        return Paragraph(t, s)
+    return P
 
 
 def _incident_summary_block(result, P, h, cell):
@@ -59,7 +69,7 @@ def _incident_summary_block(result, P, h, cell):
     ]
     t = Table(rows, colWidths=[62, 66, 86, 136, 130], repeatRows=1)
     t.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#14213d")),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e3a8a")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("GRID", (0, 0), (-1, -1), .3, colors.grey),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
@@ -80,7 +90,7 @@ def _kpi_table(result, P, h, cell):
     ]
     t = Table(rows, colWidths=[110, 120, 110, 120, 120], repeatRows=1)
     t.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#14213d")),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e3a8a")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("GRID", (0, 0), (-1, -1), .3, colors.grey),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
@@ -103,12 +113,15 @@ def _findings_table(result, P, cell):
         ])
     t = Table(rows, colWidths=[38, 46, 190, 52, 154], repeatRows=1)
     t.setStyle(TableStyle([
-        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#14213d")),
+        ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1e3a8a")),
         ("TEXTCOLOR", (0, 0), (-1, 0), colors.white),
         ("GRID", (0, 0), (-1, -1), .3, colors.grey),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("FONTSIZE", (0, 0), (-1, -1), 7.5),
         ("LEADING", (0, 0), (-1, -1), 9),
+        ("BACKGROUND", (0, 1), (-1, -1), colors.HexColor("#f8fafc")),
+        ("BACKGROUND", (0, 2), (-1, -1), colors.HexColor("#f1f5f9")),
+        ("BACKGROUND", (0, 3), (-1, -1), colors.HexColor("#f8fafc")),
     ]))
     return [Paragraph("Hallazgos y evidencia", ss["Heading2"]), t]
 
@@ -119,10 +132,10 @@ def _chart_risk_pie(result):
         return None
     labels = list(risk_by_finding.keys())
     sizes = [risk_by_finding[l] for l in labels]
-    colors_risk = ["#d73027" if v >= 80 else "#f46d43" if v >= 50 else "#1a9463" for v in sizes]
+    colors_risk = ["#dc2626" if v >= 80 else "#f97316" if v >= 50 else "#059669" for v in sizes]
     fig, ax = plt.subplots(figsize=(6, 6))
     ax.pie(sizes, labels=labels, colors=colors_risk, autopct="%1.1f%%", startangle=90)
-    ax.set_title("Riesgo por Hallazgo", fontsize=14, fontweight="bold")
+    ax.set_title("Distribución de Riesgo por Hallazgo", fontsize=14, fontweight="bold")
     chart_buf = io.BytesIO()
     fig.savefig(chart_buf, format='png', dpi=150, bbox_inches='tight')
     chart_buf.seek(0)
@@ -138,8 +151,8 @@ def _chart_top_ips(result):
     ip_list = list(top_ips.keys())
     ip_scores = list(top_ips.values())
     fig, ax = plt.subplots(figsize=(10, 6))
-    bars = ax.bar(ip_list, ip_scores, color=["#d73027" if s >= 50 else "#f46d43" if s >= 20 else "#1a9463" for s in ip_scores])
-    ax.set_xlabel("IP Address")
+    bars = ax.bar(ip_list, ip_scores, color=["#dc2626" if s >= 50 else "#f97316" if s >= 20 else "#059669" for s in ip_scores])
+    ax.set_xlabel("Dirección IP")
     ax.set_ylabel("Número de Fallos")
     ax.set_title("IPs con Mayor Número de Fallos", fontsize=14, fontweight="bold")
     for bar, score in zip(bars, ip_scores):
@@ -159,7 +172,7 @@ def _chart_hourly(result):
     hours = list(hourly_events.keys())
     counts = list(hourly_events.values())
     fig, ax = plt.subplots(figsize=(12, 5))
-    ax.plot(hours, counts, marker='o', linewidth=2, markersize=6, color='#14213d')
+    ax.plot(hours, counts, marker='o', linewidth=2, markersize=6, color='#1e3a8a')
     ax.set_xlabel("Hora")
     ax.set_ylabel("Número de Eventos")
     ax.set_title("Eventos por Hora", fontsize=14, fontweight="bold")
@@ -199,10 +212,10 @@ def _chart_ce(result):
     fig, ax = plt.subplots(figsize=(8, 4))
     ax.axis("off")
     ax.text(0.1, 0.5, "Estrategia de Contención/Eradicación/Recuperación", fontsize=12,
-            fontweight="bold", color="#14213d")
+            fontweight="bold", color="#1e3a8a")
     for i, item in enumerate(ce_content):
         ax.text(0.1, 0.4 - i*0.15, item, fontsize=9,
-                color="#d73027" if "Containment" in item else "#f46d43" if "Eradication" in item else "#1a9463")
+                color="#dc2626" if "Contención" in item else "#f97316" if "Eradicación" in item else "#059669")
     chart_buf = io.BytesIO()
     fig.savefig(chart_buf, format='png', dpi=150, bbox_inches='tight')
     chart_buf.seek(0)
@@ -219,7 +232,7 @@ def _chart_cot(result):
     ax.axis("off")
     for i, step in enumerate(cot_content):
         ax.text(i * 1.2, 5 - i * 0.8, f"{step['step']}\n{step['description']}", fontsize=9,
-                color="#14213d")
+                color="#1e3a8a")
     chart_buf = io.BytesIO()
     fig.savefig(chart_buf, format='png', dpi=150, bbox_inches='tight')
     chart_buf.seek(0)
@@ -240,7 +253,9 @@ def build(kind, result, rep, summary):
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=40, rightMargin=40,
                             topMargin=40, bottomMargin=40)
-    P = lambda t, s=b: Paragraph(esc(t).replace("\n", "<br/>"), s)
+    
+    # Create safe P function
+    P = lambda t, s=b: Paragraph(esc(t).replace("&lt;br/&gt;", "<br/>").replace("\n", "<br/>"), s)
 
     m = result["metrics"]
     top = result["incidents"][0] if result["incidents"] else None
@@ -312,7 +327,8 @@ def build_combined(result, rep, summary):
     buf = io.BytesIO()
     doc = SimpleDocTemplate(buf, pagesize=A4, leftMargin=40, rightMargin=40,
                             topMargin=40, bottomMargin=40)
-    P = lambda t, s=b: Paragraph(esc(t).replace("\n", "<br/>"), s)
+    
+    P = lambda t, s=b: Paragraph(esc(t).replace("&lt;br/&gt;", "<br/>").replace("\n", "<br/>"), s)
 
     m = result["metrics"]
     top = result["incidents"][0] if result["incidents"] else None
@@ -322,7 +338,7 @@ def build_combined(result, rep, summary):
     S.append(_section("Resumen ejecutivo", [P(rep["resumen_ejecutivo"])], h))
     if top:
         scope_flow = [P(f"Hosts afectados: {_wrap_list(top.get('hosts', []), sep=' · ')}"),
-                      P(f" Usuarios: {_wrap_list(top.get('users', []), sep=' · ')}"),
+                      P(f"Usuarios: {_wrap_list(top.get('users', []), sep=' · ')}"),
                       P(f"IPs: {_wrap_list(top.get('ips', []), sep=' · ')}"),
                       P(f"Tácticas MITRE: {_wrap_list(top.get('tactics', []), sep=' · ')}")]
         S.append(_section("Scope / impacto conocido", scope_flow, h))
