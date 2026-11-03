@@ -26,9 +26,15 @@ async def report(r):
 
 async def pdf_dl(r):
     kind = r.path_params["kind"]
-    if STATE.get("report") is None or kind not in ("ejecutivo", "tecnico"): return JSONResponse({"error": "Genera el informe primero"}, 409)
-    return Response(pdf.build(kind, STATE["result"], STATE["report"], STATE["summary"]), media_type="application/pdf",
-                    headers={"Content-Disposition": f"attachment; filename=informe_{kind}.pdf"})
+    if STATE.get("report") is None or kind not in ("ejecutivo", "tecnico", "completo"): return JSONResponse({"error": "Genera el informe primero"}, 409)
+    if kind == "completo":
+        body = pdf.build_combined(STATE["result"], STATE["report"], STATE["summary"])
+        fname = "informe_completo.pdf"
+    else:
+        body = pdf.build(kind, STATE["result"], STATE["report"], STATE["summary"])
+        fname = f"informe_{kind}.pdf"
+    return Response(body, media_type="application/pdf",
+                    headers={"Content-Disposition": f"attachment; filename={fname}"})
 
 async def sample(r): return FileResponse(ROOT / "samples" / "sample_logs.csv")
 
