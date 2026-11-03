@@ -25,6 +25,7 @@ details{margin:4px 0}summary{cursor:pointer}pre{white-space:pre-wrap;color:var(-
 <section class="card"><h2>Incidentes correlacionados</h2><div id="inc" class="empty">Sin datos</div></section>
 <section class="card"><h2>Hallazgos, razonamiento y evidencia</h2><div id="fnd" class="empty">Sin datos</div></section>
 <section class="card"><h2>Informes en español</h2><button id="gen" disabled>Generar informes con IA</button>
+<button class="sec" id="pc" disabled>PDF completo (ejecutivo + técnico)</button>
 <button class="sec" id="pe" disabled>PDF ejecutivo</button><button class="sec" id="pt" disabled>PDF técnico</button><div id="rep"></div></section>
 <section class="card"><h2>Eventos importados (primeros 200)</h2><div class="scroll" id="ev"></div></section>
 </main>
@@ -42,10 +43,10 @@ async function send(file){$('#msg').textContent='Analizando…';const fd=new For
  $('#inc').className='';$('#inc').innerHTML=R.incidents.length?`<table><tr><th>ID</th><th>Riesgo</th><th>Tácticas</th><th>IPs</th><th>Usuarios</th><th>Hosts</th></tr>${R.incidents.map(i=>`<tr><td>${i.id}</td><td><span class="tag ${i.risk}">${i.risk} ${i.score}</span></td><td>${esc(i.tactics.join(', '))}</td><td>${esc(i.ips.join(', '))}</td><td>${esc(i.users.join(', '))}</td><td>${esc(i.hosts.join(', '))}</td></tr>`).join('')}</table>`:'<div class="empty">Sin incidentes con las reglas actuales. Esto no prueba ausencia de amenazas.</div>';
  $('#fnd').className='';$('#fnd').innerHTML=R.findings.map(f=>`<details><summary><span class="tag ${f.risk}">${f.risk} ${f.score}</span> ${esc(f.title)} · ${f.mitre}</summary><pre>${esc(f.reasoning.join('\n'))}\nEvidencia: ${esc(f.evidence.join(', '))}</pre></details>`).join('');
  const k=Object.keys(j.preview[0]||{});$('#ev').innerHTML=`<table><tr>${k.map(c=>`<th>${c}</th>`).join('')}</tr>${j.preview.map(r=>`<tr>${k.map(c=>`<td>${esc(r[c])}</td>`).join('')}</tr>`).join('')}</table>`;
- $('#gen').disabled=false;$('#pe').disabled=$('#pt').disabled=true;$('#rep').innerHTML=''}
+$('#gen').disabled=false;$('#pe').disabled=$('#pt').disabled=true;$('#pc').disabled=true;$('#rep').innerHTML=''}
 $('#f').onchange=e=>e.target.files[0]&&send(e.target.files[0]);
 $('#demo').onclick=async()=>send(new File([await (await fetch('/sample')).blob()],'sample_logs.csv'));
 $('#gen').onclick=async()=>{$('#gen').textContent='Generando…';const r=await fetch('/api/report',{method:'POST'}),j=await r.json();$('#gen').textContent='Regenerar informes';
- $('#rep').innerHTML=`<h2>Resumen ejecutivo</h2><p>${esc(j.resumen_ejecutivo)}</p><h2>Resumen técnico</h2><pre>${esc(j.resumen_tecnico)}</pre><h2>Recomendaciones</h2><ul>${j.recomendaciones.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><p style="color:var(--mut)">Motor: ${esc(j.motor)} · ${esc(j.limitaciones.join(' | '))}</p>`;$('#pe').disabled=$('#pt').disabled=false};
-$('#pe').onclick=()=>location='/api/report/ejecutivo.pdf';$('#pt').onclick=()=>location='/api/report/tecnico.pdf';
+$('#rep').innerHTML=`<h2>Resumen ejecutivo</h2><p>${esc(j.resumen_ejecutivo)}</p><h2>Resumen técnico</h2><pre>${esc(j.resumen_tecnico)}</pre><h2>Recomendaciones</h2><ul>${j.recomendaciones.map(x=>`<li>${esc(x)}</li>`).join('')}</ul><p style="color:var(--mut)">Motor: ${esc(j.motor)} · ${esc(j.limitaciones.join(' | '))}</p>`;$('#pe').disabled=$('#pt').disabled=$('#pc').disabled=false};
+$('#pc').onclick=()=>location='/api/report/completo.pdf';$('#pe').onclick=()=>location='/api/report/ejecutivo.pdf';$('#pt').onclick=()=>location='/api/report/tecnico.pdf';
 </script></body></html>
